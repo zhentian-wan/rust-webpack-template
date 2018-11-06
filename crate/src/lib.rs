@@ -2,6 +2,7 @@
 extern crate cfg_if;
 
 extern crate wasm_bindgen;
+extern crate js_sys;
 use wasm_bindgen::prelude::*;
 
 cfg_if! {
@@ -47,12 +48,62 @@ extern "C" {
     fn set_inner_html(this: &Element, html: &str);
     #[wasm_bindgen(method, js_name = appendChild)]
     fn append_child(this: &Element, other: Element);
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(msg: &str);
+}
+
+macro_rules! log {
+    ($($t:tt)*) => (log(&format!($($t)*)))
 }
 
 // Called by our JS entry point to run the example
 #[wasm_bindgen]
 pub fn run() {
+    let now = js_sys::Date::now();
+    let now_date = js_sys::Date::new(&JsValue::from_f64(now));
+    
     let val = document.createElement("p");
-    val.set_inner_html("Hello from Rust, WebAssembly, and Webpack!");
+
+    log!("The {} is {}", "meaning of life", 42);
+    val.set_inner_html(&format!(
+        "Hello from Rust, it's {}:{}",
+        now_date.get_hours(),
+        now_date.get_minutes()
+    ));
     document.body().append_child(val);
+}
+#[wasm_bindgen]
+pub struct Color {
+    red: u8,
+    green: u8,
+    blue: u8,
+}
+
+#[wasm_bindgen]
+pub struct Image {
+    pixels: Vec<Color>,
+}
+
+#[wasm_bindgen]
+impl Image {
+    pub fn new() -> Image {
+        let color1 = Color {
+            red: 255,
+            green: 0,
+            blue: 0,
+        };
+        let color2 = Color {
+            red: 60,
+            green: 70,
+            blue: 90,
+        };
+        let pixels = vec![color1, color2];
+        Image {
+            pixels
+        }
+    }
+
+    pub fn pixels_ptr(&self) -> *const Color {
+        self.pixels.as_ptr()
+    }
 }
